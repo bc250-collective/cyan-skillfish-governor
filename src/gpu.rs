@@ -41,9 +41,12 @@ impl GPU {
         let  min_freq = *safe_points.first_key_value().unwrap().0;
         let max_freq = *safe_points.last_key_value().unwrap().0;
        
-        let smu = Bc250Smu::new("0000:00:00.0", true, false, 500)?;
+        let smu = Bc250Smu::new("0000:00:00.0", true, true, 500)?;
         smu.check_test_message()?;
         println!("SMU communication verified!");
+        smu.set_gpu_max_temperature(80)?;
+        smu.unforce_gfx_freq()?;
+        smu.unforce_gfx_vid()?;
         Ok(GPU {
             dev_handle: dev_handle,
             samples: 0,
