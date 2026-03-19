@@ -2,9 +2,9 @@ name: Build
 
 on:
   push:
-    branches: [ "main", "tt", "smu" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main", "tt", "smu" ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 env:

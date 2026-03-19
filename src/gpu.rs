@@ -1,3 +1,4 @@
+use crate::config::SafePoint;
 use cyan_skillfish_governor_smu::Bc250Smu;
 use libdrm_amdgpu_sys::{AMDGPU::DeviceHandle, PCI::BUS_INFO};
 use std::{collections::BTreeMap, fs::File, io::Error as IoError, os::fd::AsRawFd};
@@ -14,11 +15,12 @@ pub struct GPU {
     pub max_freq: u32,
 
     smu: Bc250Smu,
-    safe_points: BTreeMap<u32, u32>,
+    safe_points: BTreeMap<u32, SafePoint>,
+    current_perf_profile: Option<u32>,
 }
 
 impl GPU {
-    pub fn new(safe_points: BTreeMap<u32, u32>) -> Result<GPU, Box<dyn std::error::Error>> {
+    pub fn new(safe_points: BTreeMap<u32, SafePoint>) -> Result<GPU, Box<dyn std::error::Error>> {
         let location = BUS_INFO {
             domain: 0,
             bus: 1,
@@ -37,10 +39,9 @@ impl GPU {
         let (dev_handle, _, _) =
             DeviceHandle::init(card.as_raw_fd()).map_err(IoError::from_raw_os_error)?;
 
-       
-        let  min_freq = *safe_points.first_key_value().unwrap().0;
+        let min_freq = *safe_points.first_key_value().unwrap().0;
         let max_freq = *safe_points.last_key_value().unwrap().0;
-       
+
         let smu = Bc250Smu::new("0000:00:00.0", true, true, 500)?;
         smu.check_test_message()?;
         println!("SMU communication verified!");
@@ -55,6 +56,7 @@ impl GPU {
 
             smu: smu,
             safe_points: safe_points,
+            current_perf_profile: None,
         })
     }
 
@@ -82,7 +84,7 @@ impl GPU {
     }
 
     pub fn change_freq(&mut self, freq: u32) -> Result<(), IoError> {
-        let vol = *self
+        let safe_point = *self
             .safe_points
             .range(freq..)
             .next()
@@ -91,12 +93,17 @@ impl GPU {
             ))?
             .1;
 
-        self.smu.force_gfx_vid(vol)?;
+        if self.current_perf_profile != Some(safe_point.perf_profile) {
+            self.smu
+                .q3_set_perf_profile_index(safe_point.perf_profile)?;
+            self.current_perf_profile = Some(safe_point.perf_profile);
+        }
+        self.smu.force_gfx_vid(safe_point.voltage)?;
         self.smu.force_gfx_freq(freq)?;
 
         Ok(())
     }
-    pub fn get_freq(& self) -> Result<u32,IoError>{
+    pub fn get_freq(&self) -> Result<u32, IoError> {
         Ok(self.smu.get_gfx_frequency()?)
     }
 }

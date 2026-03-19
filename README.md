@@ -1,9 +1,14 @@
 # Cyan Skillfish GPU governor
+
+Huge thanks to:
+- Original developer @Magnap
+- SMU python to rust implementation, thermal throttling functionality to @filippor
+
 GPU governor for the AMD Cyan Skillfish APU.
 Continously maintains a target frequency, and adjusts the actual GPU frequency when the deviation is too great.
 If the CPU is continously busy for too long, ramps up the target frequency rapidly.
 
-this version set voltage/frequency using directly the smu api thanks to the work of [bc250collective](https://github.com/bc250-collective/)
+this version sets voltage/frequency/memory controller profile using SMU firmware commands.
 
 Takes a TOML config file path as its only argument.
 Keys are:
@@ -27,8 +32,32 @@ Keys are:
 * `temmperature` in °C
   * `throttling` if temperature is greather  start reducing max frequency
   * `throttling_recovery` if temperaure is lower restore max frequency
-* `safe-points`: known safe/stable power points, array of tables with two keys:
+* `safe-points`: known safe/stable power points, array of tables with keys:
   * `frequency`: GPU frequency in MHz
   * `voltage`: GPU supply voltage in mV
+  * `perf_profile`: SMU performance profile index for memory controller / Infinity Fabric
+    (0-3, default: 3)
+    * `3`: highest memory controller / IF performance (default if omitted)
+    * `1`: recommended low-power profile for lowest idle point
+    * `0`: lowest profile, usually no practical power benefit vs `1`
+
+`perf_profile` is checked each time the governor switches to a safe-point.
+If the new point uses the same profile index as the current one, no `q3_set_perf_profile_index`
+message is sent to SMU.
+Typical setup is to use `perf_profile = 1` only for the lowest idle safe-point, and `perf_profile = 3` for all other points.
+
+Example:
+
+```toml
+[[safe-points]]
+frequency = 1000
+voltage = 800
+perf_profile = 1
+
+[[safe-points]]
+frequency = 1175
+voltage = 850
+perf_profile = 3
+```
 
 See also `default-config.toml`.
