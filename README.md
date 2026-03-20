@@ -53,12 +53,10 @@ Keys are:
     * `1`: recommended low-power profile for lowest idle point
     * `0`: lowest profile, usually no practical power benefit vs `1`
 
-`perf_profile` is checked each time the governor switches to a safe-point.
-If the new point uses the same profile index as the current one, no `q3_set_perf_profile_index`
-message is sent to SMU.
+
 Frequency scaling remains GPU-load driven, while perf profile has a separate CPU override path:
 if CPU load exceeds `cpu-load-target.upper`, profile `3` is forced; when CPU load drops below
-`cpu-load-target.lower`, it returns to the current safe-point profile.
+`cpu-load-target.lower`, it returns to the current safe-point profile.  
 CPU load for this override is measured as max per-core utilization and sampled 2 times per second.
 Typical setup is to use `perf_profile = 1` only for the lowest idle safe-point, and `perf_profile = 3` for all other points.
 
