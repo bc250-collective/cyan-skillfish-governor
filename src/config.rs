@@ -14,6 +14,8 @@ pub struct Config {
     pub significant_change: u32,
     pub up_thresh: f32,
     pub down_thresh: f32,
+    pub cpu_up_thresh: f32,
+    pub cpu_down_thresh: f32,
     pub down_events: i16,
     pub throttling_temp: Option<u32>,
     pub throttling_recovery_temp: Option<u32>,
@@ -248,6 +250,58 @@ impl Config {
             down_thresh
         };
 
+        let cpu_load_threshs = config.get("cpu-load-target").and_then(|t| t.as_table());
+        // fraction
+        let cpu_up_thresh = cpu_load_threshs
+            .and_then(|t| t.get("upper"))
+            .ok_or("is missing")
+            .and_then(|v| {
+                v.as_float()
+                    .or_else(|| v.as_integer().map(|v| v as f64))
+                    .ok_or("must be a number")
+            })
+            .and_then(|v| {
+                (0.0..1.0)
+                    .contains(&v)
+                    .then_some(v)
+                    .ok_or("must be fractional")
+            })
+            .map(|v| v as f32)
+            .unwrap_or_else(|s| {
+                println!(
+                    "cpu-load-target.upper {s}, replaced with the value of load-target.upper ({up_thresh})"
+                );
+                up_thresh
+            });
+        // fraction
+        let cpu_down_thresh = cpu_load_threshs
+            .and_then(|t| t.get("lower"))
+            .ok_or("is missing")
+            .and_then(|v| {
+                v.as_float()
+                    .or_else(|| v.as_integer().map(|v| v as f64))
+                    .ok_or("must be a number")
+            })
+            .and_then(|v| {
+                (0.0..1.0)
+                    .contains(&v)
+                    .then_some(v)
+                    .ok_or("must be fractional")
+            })
+            .map(|v| v as f32)
+            .unwrap_or_else(|s| {
+                println!(
+                    "cpu-load-target.lower {s}, replaced with the value of load-target.lower ({down_thresh})"
+                );
+                down_thresh
+            });
+        let cpu_down_thresh = if cpu_down_thresh > cpu_up_thresh {
+            println!("cpu-load-target.lower can't be greater than cpu-load-target.upper, clamping");
+            cpu_up_thresh
+        } else {
+            cpu_down_thresh
+        };
+
         // MHz, mV
         let safe_points: BTreeMap<u32, SafePoint> = if let Some(array) = config.get("safe-points") {
             let array = array.as_array().ok_or(IoError::new(
@@ -468,6 +522,8 @@ impl Config {
             ramp_rate_burst: ramp_rate_burst,
             up_thresh: up_thresh,
             down_thresh: down_thresh,
+            cpu_up_thresh: cpu_up_thresh,
+            cpu_down_thresh: cpu_down_thresh,
             adjustment_interval: Duration::from_micros(adjustment_interval),
             significant_change: significant_change,
             throttling_temp: throttling_temp,

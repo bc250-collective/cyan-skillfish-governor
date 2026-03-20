@@ -1,5 +1,5 @@
 use crate::config::SafePoint;
-use cyan_skillfish_governor_smu::Bc250Smu;
+use cyan_skillfish_governor_smu_plus::Bc250Smu;
 use libdrm_amdgpu_sys::{AMDGPU::DeviceHandle, PCI::BUS_INFO};
 use std::{collections::BTreeMap, fs::File, io::Error as IoError, os::fd::AsRawFd};
 
@@ -84,25 +84,37 @@ impl GPU {
     }
 
     pub fn change_freq(&mut self, freq: u32) -> Result<(), IoError> {
-        let safe_point = *self
+        let safe_point = self.safe_point_for_freq(freq)?;
+        self.set_perf_profile(safe_point.perf_profile)?;
+        self.smu.force_gfx_vid(safe_point.voltage)?;
+        self.smu.force_gfx_freq(freq)?;
+
+        Ok(())
+    }
+
+    pub fn set_perf_profile(&mut self, perf_profile: u32) -> Result<(), IoError> {
+        if self.current_perf_profile != Some(perf_profile) {
+            self.smu.q3_set_perf_profile_index(perf_profile)?;
+            self.current_perf_profile = Some(perf_profile);
+        }
+        Ok(())
+    }
+
+    pub fn safe_point_perf_profile(&self, freq: u32) -> Result<u32, IoError> {
+        Ok(self.safe_point_for_freq(freq)?.perf_profile)
+    }
+
+    fn safe_point_for_freq(&self, freq: u32) -> Result<SafePoint, IoError> {
+        Ok(*self
             .safe_points
             .range(freq..)
             .next()
             .ok_or(IoError::other(
                 "tried to set a frequency beyond max safe point",
             ))?
-            .1;
-
-        if self.current_perf_profile != Some(safe_point.perf_profile) {
-            self.smu
-                .q3_set_perf_profile_index(safe_point.perf_profile)?;
-            self.current_perf_profile = Some(safe_point.perf_profile);
-        }
-        self.smu.force_gfx_vid(safe_point.voltage)?;
-        self.smu.force_gfx_freq(freq)?;
-
-        Ok(())
+            .1)
     }
+
     pub fn get_freq(&self) -> Result<u32, IoError> {
         Ok(self.smu.get_gfx_frequency()?)
     }

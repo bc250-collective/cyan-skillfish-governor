@@ -29,6 +29,10 @@ Keys are:
 * `load-target`: as a fraction
   * `upper`: GPU load above which target frequency is increased
   * `lower`: GPU load below which target frequency is decreased
+* `cpu-load-target`: as a fraction
+  * `upper`: max per-core CPU load above which `perf_profile` is temporarily forced to `3`
+  * `lower`: max per-core CPU load below which `perf_profile` returns to safe-point value
+  * if undefined, falls back to `load-target`
 * `temmperature` in °C
   * `throttling` if temperature is greather  start reducing max frequency
   * `throttling_recovery` if temperaure is lower restore max frequency
@@ -44,6 +48,10 @@ Keys are:
 `perf_profile` is checked each time the governor switches to a safe-point.
 If the new point uses the same profile index as the current one, no `q3_set_perf_profile_index`
 message is sent to SMU.
+Frequency scaling remains GPU-load driven, while perf profile has a separate CPU override path:
+if CPU load exceeds `cpu-load-target.upper`, profile `3` is forced; when CPU load drops below
+`cpu-load-target.lower`, it returns to the current safe-point profile.
+CPU load for this override is measured as max per-core utilization and sampled 2 times per second.
 Typical setup is to use `perf_profile = 1` only for the lowest idle safe-point, and `perf_profile = 3` for all other points.
 
 Example:

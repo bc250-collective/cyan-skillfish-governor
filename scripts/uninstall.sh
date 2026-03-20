@@ -11,20 +11,20 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-INSTALL_DIR="/etc/cyan-skillfish-governor-smu"
-SERVICE_FILE="/etc/systemd/system/cyan-skillfish-governor-smu.service"
+INSTALL_DIR="/etc/cyan-skillfish-governor-smu-plus"
+SERVICE_FILE="/etc/systemd/system/cyan-skillfish-governor-smu-plus.service"
 
 echo -e "${YELLOW}Uninstalling Cyan Skillfish Governor...${NC}"
 
 # Stop and disable service
-if systemctl is-active --quiet cyan-skillfish-governor-smu; then
+if systemctl is-active --quiet cyan-skillfish-governor-smu-plus; then
     echo "Stopping service..."
-    systemctl stop cyan-skillfish-governor-smu
+    systemctl stop cyan-skillfish-governor-smu-plus
 fi
 
-if systemctl is-enabled --quiet cyan-skillfish-governor-smu 2>/dev/null; then
+if systemctl is-enabled --quiet cyan-skillfish-governor-smu-plus 2>/dev/null; then
     echo "Disabling service..."
-    systemctl disable cyan-skillfish-governor-smu
+    systemctl disable cyan-skillfish-governor-smu-plus
 fi
 
 # Remove service file

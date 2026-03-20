@@ -22,6 +22,11 @@ adjust = 50
 upper = 0.75
 lower = 0.50
 
+# %
+[cpu-load-target]
+upper = 0.75
+lower = 0.50
+
 #°C
 [temperature]
 throttling = 85
@@ -101,4 +106,3 @@ perf_profile = 3
 frequency = 2350
 voltage = 1125
 perf_profile = 3
-
