@@ -5,7 +5,8 @@
 > It does **not** work correctly with BIOS/UEFI **Robin 5.00**.
 >
 > Config location and sturcture is different from the original `cyan-skillfish-governor`:
-> - This project: `/etc/cyan-skillfish-governor-smu-plus/config.toml`
+> - It uses: `/etc/cyan-skillfish-governor-smu-plus/config.toml`
+> - Config structure changes are described at the end of readme.
 
 Huge thanks to:
 - Original developer @Magnap
