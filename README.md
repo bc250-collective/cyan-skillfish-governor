@@ -1,5 +1,12 @@
 # Cyan Skillfish GPU governor
 
+> **IMPORTANT**
+> This build requires BIOS/UEFI **Robin 3.00** to function correctly.
+> It does **not** work correctly with BIOS/UEFI **Robin 5.00**.
+>
+> Config location and sturcture is different from the original `cyan-skillfish-governor`:
+> - This project: `/etc/cyan-skillfish-governor-smu-plus/config.toml`
+
 Huge thanks to:
 - Original developer @Magnap
 - SMU python to rust implementation, thermal throttling functionality to @filippor
